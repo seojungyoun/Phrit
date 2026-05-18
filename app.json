@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "PHRIT",
+    "slug": "phrit",
+    "scheme": "phrit",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router"],
+    "assetBundlePatterns": ["**/*"]
+  }
+}
