@@ -1,8 +1,9 @@
 import { PropsWithChildren } from 'react';
-import { SafeAreaView, SafeAreaViewProps, StyleSheet } from 'react-native';
+import { ComponentProps } from 'react';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import { useThemeColors } from '@/src/theme/useThemeColors';
 
-type ScreenProps = PropsWithChildren<SafeAreaViewProps>;
+type ScreenProps = PropsWithChildren<ComponentProps<typeof SafeAreaView>>;
 
 export function Screen({ children, style, ...props }: ScreenProps) {
   const colors = useThemeColors();

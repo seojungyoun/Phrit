@@ -6,6 +6,8 @@ import { Body, Heading } from '@/src/components/Typography';
 import { supabase } from '@/src/lib/supabase';
 import { useThemeColors } from '@/src/theme/useThemeColors';
 
+const first = <T,>(value: T | T[] | null | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
+
 export function SearchScreen() {
   const colors = useThemeColors();
   const [term, setTerm] = useState('');
@@ -21,7 +23,7 @@ export function SearchScreen() {
         .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((item) => ({ ...item, profiles: first(item.profiles) }));
     },
   });
 

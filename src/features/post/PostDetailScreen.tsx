@@ -91,6 +91,8 @@ export function PostDetailScreen() {
     );
   }
 
+  const postData = post.data;
+
   return (
     <Screen>
       <FlatList
@@ -102,22 +104,22 @@ export function PostDetailScreen() {
             <Pressable onPress={() => router.back()}>
               <Body style={{ color: colors.accent }}>Back</Body>
             </Pressable>
-            <Heading>{post.data.caption}</Heading>
-            <Image source={{ uri: post.data.image_url }} style={styles.image} contentFit="cover" />
-            <Body style={{ color: colors.muted }}>@{post.data.profiles?.username ?? 'phriter'}</Body>
+            <Heading>{postData.caption}</Heading>
+            <Image source={{ uri: postData.image_url }} style={styles.image} contentFit="cover" />
+            <Body style={{ color: colors.muted }}>@{postData.profiles?.username ?? 'phriter'}</Body>
             <View style={styles.actions}>
               <Pressable
                 onPress={async () => {
                   if (!session?.user.id || !id) return;
                   await toggleReaction(id, session.user.id);
-                  if (post.data.user_id !== session.user.id) {
-                    sendPush(post.data.user_id, 'New echo', 'Someone felt your PHRIT.', { postId: id }).catch(() => undefined);
+                  if (postData.user_id !== session.user.id) {
+                    sendPush(postData.user_id, 'New echo', 'Someone felt your PHRIT.', { postId: id }).catch(() => undefined);
                   }
                   await refreshPost();
                 }}
                 style={[styles.action, { borderColor: colors.border }]}
               >
-                <Body style={{ color: colors.accent }}>felt {post.data.reactions?.[0]?.count ?? 0}</Body>
+                <Body style={{ color: colors.accent }}>felt {postData.reactions?.[0]?.count ?? 0}</Body>
               </Pressable>
               <Pressable
                 onPress={async () => {

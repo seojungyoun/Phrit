@@ -9,6 +9,15 @@ export type Profile = {
   is_admin: boolean;
 };
 
+export type ProfilePost = {
+  id: string;
+  caption: string;
+  image_url: string;
+  created_at: string;
+};
+
+const first = <T,>(value: T | T[] | null | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
+
 export const useProfile = (userId?: string) =>
   useQuery({
     enabled: Boolean(userId),
@@ -31,7 +40,7 @@ export const useMyPosts = (userId?: string) =>
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ProfilePost[];
     },
   });
 
@@ -46,7 +55,7 @@ export const useSavedPosts = (userId?: string) =>
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((row) => row.posts).filter(Boolean);
+      return (data ?? []).map((row) => first(row.posts)).filter(Boolean) as ProfilePost[];
     },
   });
 

@@ -9,6 +9,8 @@ export type PostComment = {
   profiles: { username: string | null } | null;
 };
 
+const first = <T,>(value: T | T[] | null | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
+
 export const usePost = (postId?: string) =>
   useQuery({
     enabled: Boolean(postId),
@@ -20,7 +22,7 @@ export const usePost = (postId?: string) =>
         .eq('id', postId)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data ? { ...data, profiles: first(data.profiles) } : null;
     },
   });
 
@@ -35,7 +37,7 @@ export const useComments = (postId?: string) =>
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return (data ?? []) as PostComment[];
+      return (data ?? []).map((comment) => ({ ...comment, profiles: first(comment.profiles) })) as unknown as PostComment[];
     },
   });
 

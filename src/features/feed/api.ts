@@ -26,6 +26,8 @@ export type DailyQuestion = {
   question_date: string;
 };
 
+const first = <T,>(value: T | T[] | null | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
+
 export const useFeed = () =>
   useInfiniteQuery({
     queryKey: ['feed'],
@@ -38,7 +40,7 @@ export const useFeed = () =>
         .order('created_at', { ascending: false })
         .range(from, to);
       if (error) throw error;
-      return (data ?? []) as FeedPost[];
+      return (data ?? []).map((post) => ({ ...post, profiles: first(post.profiles) })) as unknown as FeedPost[];
     },
     getNextPageParam: (last, all) => (last.length < pageSize ? undefined : all.length),
     initialPageParam: 0,

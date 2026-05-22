@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/src/lib/supabase';
 
+const first = <T,>(value: T | T[] | null | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
+
 export const useEchoes = (userId?: string) =>
   useQuery({
     enabled: Boolean(userId),
@@ -13,6 +15,6 @@ export const useEchoes = (userId?: string) =>
         .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((item) => ({ ...item, profiles: first(item.profiles), posts: first(item.posts) }));
     },
   });
