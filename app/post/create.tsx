@@ -24,6 +24,13 @@ export default function CreatePostScreen() {
   const isWide = width >= 860;
   const previewWidth = Math.min(isWide ? 390 : width - 40, 430);
   const canPost = Boolean(caption.trim() && image && question.data && !loading);
+  const disabledReason = !question.data
+    ? 'Today question is missing. Run supabase/schema.sql or create a question as admin.'
+    : !image
+      ? 'Choose a photo or capture one with the camera.'
+      : !caption.trim()
+        ? 'Write one sentence before posting.'
+        : '';
 
   const chooseLibrary = async () => {
     setMessage('');
@@ -46,7 +53,14 @@ export default function CreatePostScreen() {
   };
 
   const submit = async () => {
-    if (!session || !question.data || !image) return;
+    if (!session) {
+      setMessage('Sign in again before posting.');
+      return;
+    }
+    if (!question.data || !image || !caption.trim()) {
+      setMessage(disabledReason);
+      return;
+    }
     setLoading(true);
     setMessage('');
     try {
@@ -117,6 +131,7 @@ export default function CreatePostScreen() {
           <Pressable disabled={!canPost} onPress={submit} style={[styles.primary, { backgroundColor: canPost ? colors.accent : colors.border }]}>
             {loading ? <ActivityIndicator color="#fff" /> : <Body style={[styles.primaryText, { color: canPost ? '#fff' : colors.muted }]}>Post story</Body>}
           </Pressable>
+          {!canPost && !loading ? <Body style={[styles.disabledReason, { color: colors.muted }]}>{disabledReason}</Body> : null}
           <Pressable onPress={() => router.back()} style={[styles.secondary, { borderColor: colors.border }]}>
             <Body>Cancel</Body>
           </Pressable>
@@ -148,6 +163,7 @@ const styles = StyleSheet.create({
   counter: { textAlign: 'right', marginTop: 6 },
   primary: { height: 54, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   primaryText: { fontWeight: '900' },
+  disabledReason: { marginTop: -6, lineHeight: 19 },
   secondary: { height: 48, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   message: { lineHeight: 21 },
 });
