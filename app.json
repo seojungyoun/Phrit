@@ -19,6 +19,7 @@
     "android": {
       "package": "com.phrit.app",
       "permissions": [
+        "CAMERA",
         "READ_MEDIA_IMAGES",
         "READ_EXTERNAL_STORAGE"
       ],
@@ -33,7 +34,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "PHRIT uses photo access so you can share today's image."
+          "photosPermission": "PHRIT uses photo access so you can share today's image.",
+          "cameraPermission": "PHRIT uses camera access so you can capture today's image."
         }
       ],
       "expo-asset"
