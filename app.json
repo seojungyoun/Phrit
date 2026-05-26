@@ -18,7 +18,10 @@
     },
     "android": {
       "package": "com.phrit.app",
-      "permissions": ["READ_MEDIA_IMAGES", "READ_EXTERNAL_STORAGE"],
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7F4EE"
@@ -32,8 +35,11 @@
         {
           "photosPermission": "PHRIT uses photo access so you can share today's image."
         }
-      ]
+      ],
+      "expo-asset"
     ],
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": [
+      "**/*"
+    ]
   }
 }
