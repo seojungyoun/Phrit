@@ -1,5 +1,6 @@
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { MotiView } from 'moti';
 import { useQueryClient } from '@tanstack/react-query';
@@ -95,11 +96,11 @@ export function FeedScreen() {
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Pressable onPress={() => router.push(`/post/${item.id}`)} style={styles.imageButton}>
                 <Image source={{ uri: item.image_url }} style={styles.image} contentFit="cover" />
-                <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.82)']} style={styles.overlay}>
                   <Body numberOfLines={isCompact ? 2 : 3} style={[styles.caption, isCompact && styles.captionCompact]}>
                     {item.caption}
                   </Body>
-                </View>
+                </LinearGradient>
               </Pressable>
               <View style={[styles.cardFooter, isCompact && styles.cardFooterCompact]}>
                 <View style={styles.metaBlock}>
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
   card: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 4, overflow: 'hidden' },
   imageButton: { width: '100%', aspectRatio: 1, borderRadius: 6, overflow: 'hidden' },
   image: { width: '100%', height: '100%' },
-  overlay: { position: 'absolute', left: 6, right: 6, bottom: 6, borderRadius: 6, padding: 6 },
+  overlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 92, justifyContent: 'flex-end', padding: 8 },
   caption: { textAlign: 'center', color: '#fff', fontWeight: '800', lineHeight: 20 },
   captionCompact: { fontSize: 10, lineHeight: 12 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, alignItems: 'center', paddingTop: 10 },

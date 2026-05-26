@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/src/components/Screen';
 import { Body, Heading } from '@/src/components/Typography';
 import { useTodayQuestion } from '@/src/features/feed/api';
+import { shareToInstagramStory } from '@/src/features/post/share';
 import { createPostWithImage, pickPostImageFromLibrary, PickedPostImage, takePostPhoto } from '@/src/features/post/upload';
 import { ensureProfile } from '@/src/features/profile/api';
 import { useSessionStore } from '@/src/store/sessionStore';
@@ -76,6 +78,15 @@ export default function CreatePostScreen() {
     }
   };
 
+  const shareStory = async () => {
+    setMessage('');
+    try {
+      await shareToInstagramStory(image);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not open sharing.');
+    }
+  };
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={[styles.page, isWide && styles.pageWide]} keyboardShouldPersistTaps="handled">
@@ -89,11 +100,11 @@ export default function CreatePostScreen() {
                 <Body style={[styles.previewHint, { color: colors.muted }]}>Choose a photo or open the camera.</Body>
               </View>
             )}
-            <View style={[styles.previewCaption, { backgroundColor: colors.overlay }]}>
+            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.82)']} style={styles.previewGradient}>
               <Body numberOfLines={3} style={styles.previewCaptionText}>
                 {caption.trim() || 'One sentence for today'}
               </Body>
-            </View>
+            </LinearGradient>
           </View>
         </View>
 
@@ -131,6 +142,9 @@ export default function CreatePostScreen() {
           <Pressable disabled={!canPost} onPress={submit} style={[styles.primary, { backgroundColor: canPost ? colors.accent : colors.border }]}>
             {loading ? <ActivityIndicator color="#fff" /> : <Body style={[styles.primaryText, { color: canPost ? '#fff' : colors.muted }]}>Post story</Body>}
           </Pressable>
+          <Pressable disabled={!image} onPress={shareStory} style={[styles.instagram, { borderColor: colors.accent, opacity: image ? 1 : 0.5 }]}>
+            <Body style={[styles.instagramText, { color: colors.accent }]}>Share to Instagram Story</Body>
+          </Pressable>
           {!canPost && !loading ? <Body style={[styles.disabledReason, { color: colors.muted }]}>{disabledReason}</Body> : null}
           <Pressable onPress={() => router.back()} style={[styles.secondary, { borderColor: colors.border }]}>
             <Body>Cancel</Body>
@@ -151,7 +165,7 @@ const styles = StyleSheet.create({
   emptyPreview: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
   previewBrand: { fontSize: 30, fontWeight: '900' },
   previewHint: { marginTop: 12, textAlign: 'center', lineHeight: 21 },
-  previewCaption: { position: 'absolute', left: 20, right: 20, bottom: 34, borderRadius: 8, padding: 12 },
+  previewGradient: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 190, justifyContent: 'flex-end', paddingHorizontal: 20, paddingBottom: 34 },
   previewCaptionText: { color: '#fff', textAlign: 'center', fontSize: 18, fontWeight: '800' },
   controls: { flex: 1, gap: 16 },
   kicker: { fontSize: 13, fontWeight: '900', textTransform: 'uppercase' },
@@ -163,6 +177,8 @@ const styles = StyleSheet.create({
   counter: { textAlign: 'right', marginTop: 6 },
   primary: { height: 54, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   primaryText: { fontWeight: '900' },
+  instagram: { height: 50, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  instagramText: { fontWeight: '900' },
   disabledReason: { marginTop: -6, lineHeight: 19 },
   secondary: { height: 48, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   message: { lineHeight: 21 },

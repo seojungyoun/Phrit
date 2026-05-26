@@ -59,7 +59,8 @@ export function ProfileScreen() {
           <View style={styles.headerWrap}>
             <View style={styles.header}>
               <View style={styles.titleBlock}>
-                <Heading>{profile.data?.username ? `@${profile.data.username}` : 'Profile'}</Heading>
+                <Body style={[styles.kicker, { color: colors.accent }]}>My page</Body>
+                <Heading>{profile.data?.username ? `@${profile.data.username}` : 'My page'}</Heading>
                 <Body style={[styles.email, { color: colors.muted }]}>{session?.user.email}</Body>
               </View>
               <Pressable onPress={() => supabase.auth.signOut()} style={[styles.smallButton, { borderColor: colors.border }]}>
@@ -136,7 +137,7 @@ export function ProfileScreen() {
             <Body style={{ color: colors.muted }}>No PHRITs yet.</Body>
           </View>
         }
-        numColumns={2}
+        numColumns={3}
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/post/${item.id}`)} style={styles.tile}>
             <Image source={{ uri: item.image_url }} style={styles.image} contentFit="cover" />
@@ -154,6 +155,7 @@ const styles = StyleSheet.create({
   headerWrap: { gap: 14 },
   header: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' },
   titleBlock: { flex: 1 },
+  kicker: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', marginBottom: 6 },
   email: { marginTop: 8 },
   smallButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   editor: { gap: 10 },
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
   loader: { marginTop: 16 },
   grid: { paddingVertical: 18, gap: 12 },
   empty: { borderWidth: 1, borderRadius: 14, padding: 18 },
-  tile: { flex: 1, margin: 4 },
-  image: { aspectRatio: 1, borderRadius: 12 },
-  caption: { marginTop: 8, fontWeight: '700' },
+  tile: { flex: 1, margin: 3 },
+  image: { aspectRatio: 1, borderRadius: 8 },
+  caption: { marginTop: 6, fontSize: 12, fontWeight: '700' },
 });
