@@ -8,7 +8,7 @@ import { Body, Heading } from '@/src/components/Typography';
 import { supabase } from '@/src/lib/supabase';
 import { useSessionStore } from '@/src/store/sessionStore';
 import { useThemeColors } from '@/src/theme/useThemeColors';
-import { ensureProfile, updateProfile, useMyPosts, useProfile, useSavedPosts } from './api';
+import { ensureProfile, pickAndUploadAvatar, updateEmail, updatePassword, updateProfile, useMyPosts, useProfile, useSavedPosts } from './api';
 
 export function ProfileScreen() {
   const colors = useThemeColors();
@@ -17,11 +17,13 @@ export function ProfileScreen() {
   const profile = useProfile(session?.user.id);
   const posts = useMyPosts(session?.user.id);
   const savedPosts = useSavedPosts(session?.user.id);
-  const [isEditing, setIsEditing] = useState(false);
   const [view, setView] = useState<'mine' | 'saved'>('mine');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
+  const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (session?.user.id && !profile.isLoading && !profile.data) {
@@ -34,18 +36,68 @@ export function ProfileScreen() {
       setUsername(profile.data.username);
       setBio(profile.data.bio ?? '');
     }
-  }, [profile.data]);
+    setEmail(session?.user.email ?? '');
+  }, [profile.data, session?.user.email]);
 
-  const save = async () => {
+  const refreshProfile = async () => {
     if (!session?.user.id) return;
+    await queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] });
+  };
+
+  const saveProfile = async () => {
+    if (!session?.user.id) return;
+    setBusy(true);
     setMessage('');
     try {
       await updateProfile(session.user.id, username, bio);
-      await queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] });
-      setIsEditing(false);
+      await refreshProfile();
       setMessage('Profile saved.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save profile.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changeAvatar = async () => {
+    if (!session?.user.id) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      await pickAndUploadAvatar(session.user.id);
+      await refreshProfile();
+      setMessage('Profile photo updated.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not update profile photo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveEmail = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      await updateEmail(email);
+      setMessage('Check your new email to confirm the change.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not update email.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const savePassword = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      await updatePassword(newPassword);
+      setNewPassword('');
+      setMessage('Password updated.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not update password.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -57,65 +109,89 @@ export function ProfileScreen() {
       <FlatList
         ListHeaderComponent={
           <View style={styles.headerWrap}>
-            <View style={styles.header}>
-              <View style={styles.titleBlock}>
+            <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Pressable onPress={changeAvatar} style={[styles.avatar, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                {profile.data?.avatar_url ? (
+                  <Image source={{ uri: profile.data.avatar_url }} style={styles.avatarImage} contentFit="cover" />
+                ) : (
+                  <Body style={[styles.avatarInitial, { color: colors.accent }]}>{(profile.data?.username ?? 'P').slice(0, 1).toUpperCase()}</Body>
+                )}
+              </Pressable>
+
+              <View style={styles.profileMain}>
                 <Body style={[styles.kicker, { color: colors.accent }]}>My page</Body>
                 <Heading>{profile.data?.username ? `@${profile.data.username}` : 'My page'}</Heading>
                 <Body style={[styles.email, { color: colors.muted }]}>{session?.user.email}</Body>
+                <Body style={[styles.bio, { color: colors.muted }]}>{profile.data?.bio || 'No bio yet.'}</Body>
               </View>
               <Pressable onPress={() => supabase.auth.signOut()} style={[styles.smallButton, { borderColor: colors.border }]}>
                 <Body>Logout</Body>
               </Pressable>
             </View>
 
-            {isEditing ? (
-              <View style={styles.editor}>
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setUsername}
-                  placeholder="username"
-                  placeholderTextColor={colors.muted}
-                  style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-                  value={username}
-                />
-                <TextInput
-                  maxLength={160}
-                  multiline
-                  onChangeText={setBio}
-                  placeholder="bio"
-                  placeholderTextColor={colors.muted}
-                  style={[styles.textarea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-                  value={bio}
-                />
-                <View style={styles.row}>
-                  <Pressable onPress={save} style={[styles.primary, { backgroundColor: colors.accent }]}>
-                    <Body style={styles.primaryText}>Save</Body>
-                  </Pressable>
-                  <Pressable onPress={() => setIsEditing(false)} style={[styles.secondary, { borderColor: colors.border }]}>
-                    <Body>Cancel</Body>
-                  </Pressable>
-                </View>
+            <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Body style={styles.sectionTitle}>회원정보 수정</Body>
+              <TextInput
+                autoCapitalize="none"
+                onChangeText={setUsername}
+                placeholder="Username"
+                placeholderTextColor={colors.muted}
+                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
+                value={username}
+              />
+              <TextInput
+                maxLength={160}
+                multiline
+                onChangeText={setBio}
+                placeholder="Bio"
+                placeholderTextColor={colors.muted}
+                style={[styles.textarea, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
+                value={bio}
+              />
+              <Pressable disabled={busy} onPress={saveProfile} style={[styles.primary, { backgroundColor: colors.accent, opacity: busy ? 0.72 : 1 }]}>
+                {busy ? <ActivityIndicator color="#fff" /> : <Body style={styles.primaryText}>Save profile</Body>}
+              </Pressable>
+            </View>
+
+            <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Body style={styles.sectionTitle}>계정 설정</Body>
+              <TextInput
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="Email"
+                placeholderTextColor={colors.muted}
+                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
+                value={email}
+              />
+              <Pressable disabled={busy} onPress={saveEmail} style={[styles.secondary, { borderColor: colors.border }]}>
+                <Body>Change email</Body>
+              </Pressable>
+              <TextInput
+                autoCapitalize="none"
+                onChangeText={setNewPassword}
+                placeholder="New password"
+                placeholderTextColor={colors.muted}
+                secureTextEntry
+                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
+                value={newPassword}
+              />
+              <Pressable disabled={busy || !newPassword} onPress={savePassword} style={[styles.secondary, { borderColor: colors.border, opacity: newPassword ? 1 : 0.5 }]}>
+                <Body>Change password</Body>
+              </Pressable>
+              <Body style={{ color: colors.muted, lineHeight: 20 }}>Google/Apple social login is available on the login page after enabling providers in Supabase Auth.</Body>
+            </View>
+
+            {profile.data?.is_admin ? (
+              <View style={styles.row}>
+                <Pressable onPress={() => router.push('/admin/questions')} style={[styles.secondary, { borderColor: colors.border }]}>
+                  <Body>Questions</Body>
+                </Pressable>
+                <Pressable onPress={() => router.push('/admin/reports')} style={[styles.secondary, { borderColor: colors.border }]}>
+                  <Body>Reports</Body>
+                </Pressable>
               </View>
-            ) : (
-              <View style={styles.profileActions}>
-                <Body style={{ color: colors.muted }}>{profile.data?.bio || 'No bio yet.'}</Body>
-                <View style={styles.row}>
-                  <Pressable onPress={() => setIsEditing(true)} style={[styles.secondary, { borderColor: colors.border }]}>
-                    <Body>Edit profile</Body>
-                  </Pressable>
-                  {profile.data?.is_admin ? (
-                    <>
-                      <Pressable onPress={() => router.push('/admin/questions')} style={[styles.secondary, { borderColor: colors.border }]}>
-                        <Body>Questions</Body>
-                      </Pressable>
-                      <Pressable onPress={() => router.push('/admin/reports')} style={[styles.secondary, { borderColor: colors.border }]}>
-                        <Body>Reports</Body>
-                      </Pressable>
-                    </>
-                  ) : null}
-                </View>
-              </View>
-            )}
+            ) : null}
 
             {message ? <Body style={{ color: colors.muted }}>{message}</Body> : null}
             <View style={[styles.segment, { borderColor: colors.border }]}>
@@ -153,24 +229,28 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   headerWrap: { gap: 14 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' },
-  titleBlock: { flex: 1 },
+  profileCard: { flexDirection: 'row', gap: 14, borderWidth: 1, borderRadius: 8, padding: 14, alignItems: 'flex-start' },
+  avatar: { width: 82, height: 82, borderRadius: 41, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImage: { width: '100%', height: '100%' },
+  avatarInitial: { fontSize: 34, fontWeight: '900' },
+  profileMain: { flex: 1 },
   kicker: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', marginBottom: 6 },
   email: { marginTop: 8 },
+  bio: { marginTop: 10, lineHeight: 20 },
   smallButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  editor: { gap: 10 },
-  input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
-  textarea: { minHeight: 88, borderWidth: 1, borderRadius: 14, padding: 12, textAlignVertical: 'top' },
-  profileActions: { gap: 12 },
-  segment: { flexDirection: 'row', borderWidth: 1, borderRadius: 14, padding: 3 },
-  segmentItem: { flex: 1, alignItems: 'center', borderRadius: 11, paddingVertical: 10 },
+  settingsCard: { borderWidth: 1, borderRadius: 8, padding: 14, gap: 10 },
+  sectionTitle: { fontSize: 17, fontWeight: '900' },
+  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
+  textarea: { minHeight: 88, borderWidth: 1, borderRadius: 8, padding: 12, textAlignVertical: 'top' },
+  segment: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, padding: 3 },
+  segmentItem: { flex: 1, alignItems: 'center', borderRadius: 6, paddingVertical: 10 },
   row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  primary: { borderRadius: 14, paddingHorizontal: 18, paddingVertical: 12 },
-  primaryText: { color: '#fff', fontWeight: '800' },
-  secondary: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 11 },
+  primary: { borderRadius: 8, paddingHorizontal: 18, paddingVertical: 13, alignItems: 'center' },
+  primaryText: { color: '#fff', fontWeight: '900' },
+  secondary: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
   loader: { marginTop: 16 },
   grid: { paddingVertical: 18, gap: 12 },
-  empty: { borderWidth: 1, borderRadius: 14, padding: 18 },
+  empty: { borderWidth: 1, borderRadius: 8, padding: 18 },
   tile: { flex: 1, margin: 3 },
   image: { aspectRatio: 1, borderRadius: 8 },
   caption: { marginTop: 6, fontSize: 12, fontWeight: '700' },

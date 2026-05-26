@@ -129,6 +129,7 @@ supabase/schema.sql
 - `blocked_users`
 - `push_tokens`
 - `post-images` Storage bucket
+- `profile-images` Storage bucket
 - RLS 정책
 - 신규 사용자 프로필 자동 생성 트리거
 - 오늘 날짜의 기본 질문 seed
@@ -140,6 +141,23 @@ update profiles
 set is_admin = true
 where id = 'USER_UUID';
 ```
+
+소셜 로그인을 사용하려면 Supabase Dashboard에서 아래를 설정하세요.
+
+```txt
+Authentication → Providers → Google / Apple 활성화
+Authentication → URL Configuration → Redirect URLs
+```
+
+개발 중에는 Expo redirect URL과 앱 scheme을 함께 등록해야 합니다.
+
+```txt
+phrit://
+exp://127.0.0.1:8081
+http://localhost:8081
+```
+
+실제 EAS 빌드에서는 Expo가 출력하는 redirect URL을 추가로 등록하세요.
 
 푸시 발송 Edge Function은 아래처럼 배포합니다.
 

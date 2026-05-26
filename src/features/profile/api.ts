@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/src/lib/supabase';
 
 export type Profile = {
@@ -72,5 +73,45 @@ export async function updateProfile(userId: string, username: string, bio: strin
   const cleanUsername = username.trim().replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24);
   if (cleanUsername.length < 3) throw new Error('Username must be at least 3 characters.');
   const { error } = await supabase.from('profiles').update({ username: cleanUsername, bio: bio.trim().slice(0, 160) }).eq('id', userId);
+  if (error) throw error;
+}
+
+export async function pickAndUploadAvatar(userId: string) {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) throw new Error('Photo library permission is required.');
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.82,
+  });
+  if (result.canceled || !result.assets[0]) return null;
+
+  const asset = result.assets[0];
+  const blob = await fetch(asset.uri).then((response) => response.blob());
+  const path = `${userId}/avatar-${Date.now()}.jpg`;
+  const { error: uploadError } = await supabase.storage.from('profile-images').upload(path, blob, {
+    contentType: blob.type || 'image/jpeg',
+    upsert: true,
+  });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from('profile-images').getPublicUrl(path);
+  const { error } = await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
+  if (error) throw error;
+  return data.publicUrl;
+}
+
+export async function updatePassword(password: string) {
+  if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
+export async function updateEmail(email: string) {
+  const cleanEmail = email.trim();
+  if (!cleanEmail.includes('@')) throw new Error('Enter a valid email.');
+  const { error } = await supabase.auth.updateUser({ email: cleanEmail });
   if (error) throw error;
 }

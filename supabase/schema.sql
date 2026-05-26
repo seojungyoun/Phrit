@@ -96,6 +96,10 @@ insert into storage.buckets (id, name, public)
 values ('post-images', 'post-images', true)
 on conflict (id) do update set public = true;
 
+insert into storage.buckets (id, name, public)
+values ('profile-images', 'profile-images', true)
+on conflict (id) do update set public = true;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -251,6 +255,22 @@ create policy "users can update own post images" on storage.objects
 drop policy if exists "users can delete own post images" on storage.objects;
 create policy "users can delete own post images" on storage.objects
   for delete using (bucket_id = 'post-images' and auth.uid()::text = (storage.foldername(name))[1]);
+
+drop policy if exists "profile images are public" on storage.objects;
+create policy "profile images are public" on storage.objects
+  for select using (bucket_id = 'profile-images');
+
+drop policy if exists "users can upload own profile images" on storage.objects;
+create policy "users can upload own profile images" on storage.objects
+  for insert with check (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);
+
+drop policy if exists "users can update own profile images" on storage.objects;
+create policy "users can update own profile images" on storage.objects
+  for update using (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);
+
+drop policy if exists "users can delete own profile images" on storage.objects;
+create policy "users can delete own profile images" on storage.objects
+  for delete using (bucket_id = 'profile-images' and auth.uid()::text = (storage.foldername(name))[1]);
 
 insert into daily_questions (question_text, question_date)
 values ('What felt most like today?', current_date)

@@ -122,6 +122,9 @@ export default function AuthScreen() {
                 <Body style={styles.socialText}>Continue with Apple</Body>
               </Pressable>
             </View>
+            <Body style={[styles.helpText, { color: colors.muted }]}>
+              Social login requires Google/Apple providers and redirect URL settings in Supabase Auth.
+            </Body>
 
             {message ? <Body style={[styles.message, { color: colors.muted }]}>{message}</Body> : null}
           </View>
@@ -152,5 +155,6 @@ const styles = StyleSheet.create({
   socials: { gap: 10 },
   secondary: { height: 48, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   socialText: { fontWeight: '800' },
+  helpText: { fontSize: 12, lineHeight: 18 },
   message: { lineHeight: 21 },
 });
