@@ -14,6 +14,7 @@ export function ProfileScreen() {
   const colors = useThemeColors();
   const queryClient = useQueryClient();
   const session = useSessionStore((state) => state.session);
+  const clearSession = useSessionStore((state) => state.clearSession);
   const profile = useProfile(session?.user.id);
   const posts = useMyPosts(session?.user.id);
   const savedPosts = useSavedPosts(session?.user.id);
@@ -104,6 +105,18 @@ export function ProfileScreen() {
   const visiblePosts = view === 'mine' ? posts.data ?? [] : savedPosts.data ?? [];
   const isLoadingPosts = view === 'mine' ? posts.isLoading : savedPosts.isLoading;
 
+  const logout = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } finally {
+      queryClient.clear();
+      clearSession();
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen>
       <FlatList
@@ -124,7 +137,7 @@ export function ProfileScreen() {
                 <Body style={[styles.email, { color: colors.muted }]}>{session?.user.email}</Body>
                 <Body style={[styles.bio, { color: colors.muted }]}>{profile.data?.bio || 'No bio yet.'}</Body>
               </View>
-              <Pressable onPress={() => supabase.auth.signOut()} style={[styles.smallButton, { borderColor: colors.border }]}>
+              <Pressable onPress={logout} style={[styles.smallButton, { borderColor: colors.border }]}>
                 <Body>Logout</Body>
               </Pressable>
             </View>

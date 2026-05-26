@@ -11,26 +11,55 @@ const queryClient = new QueryClient();
 export function AppProviders({ children }: PropsWithChildren) {
   const setReady = useSessionStore((state) => state.setReady);
   const setSession = useSessionStore((state) => state.setSession);
+  const clearSession = useSessionStore((state) => state.clearSession);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-      if (data.session?.user.id) {
-        registerPushToken(data.session.user.id).catch(() => undefined);
+    let isMounted = true;
+
+    async function hydrateSession() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (isMounted) clearSession();
+          return;
+        }
+
+        const { data: userData, error } = await supabase.auth.getUser();
+        if (error || !userData.user) {
+          await supabase.auth.signOut({ scope: 'local' });
+          if (isMounted) clearSession();
+          return;
+        }
+
+        if (isMounted) {
+          setSession(sessionData.session);
+          setReady(true);
+          registerPushToken(userData.user.id).catch(() => undefined);
+        }
+      } catch {
+        if (isMounted) clearSession();
       }
-    });
+    }
+
+    hydrateSession();
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      if (session) {
+        setSession(session);
+      } else {
+        clearSession();
+      }
       queryClient.invalidateQueries();
       if (session?.user.id) {
         registerPushToken(session.user.id).catch(() => undefined);
       }
     });
 
-    return () => data.subscription.unsubscribe();
-  }, [setReady, setSession]);
+    return () => {
+      isMounted = false;
+      data.subscription.unsubscribe();
+    };
+  }, [clearSession, setReady, setSession]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
