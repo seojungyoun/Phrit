@@ -20,7 +20,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="create"
         options={{
-          href: null,
           tabBarButton: () => (
             <Pressable onPress={() => router.push('/post/create')} style={{ height: 56, width: 70, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="add-outline" color={colors.accent} size={42} />
