@@ -19,6 +19,9 @@ export function formatAuthError(error: unknown, fallback = 'Authentication faile
   const message = error instanceof Error ? error.message : fallback;
   const lower = message.toLowerCase();
 
+  if (lower.includes('failed to fetch') || lower.includes('network request failed')) {
+    return 'Cannot reach Supabase. Check EXPO_PUBLIC_SUPABASE_URL, project status, and your network, then restart Expo with --clear.';
+  }
   if (lower.includes('password')) {
     return 'Password must meet Supabase Auth rules. Try at least 6 characters.';
   }
