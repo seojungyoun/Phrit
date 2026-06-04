@@ -1,10 +1,17 @@
 import { Pressable } from 'react-native';
-import { Tabs, router } from 'expo-router';
+import { Redirect, Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSessionStore } from '@/src/store/sessionStore';
 import { useThemeColors } from '@/src/theme/useThemeColors';
 
 export default function TabsLayout() {
   const colors = useThemeColors();
+  const session = useSessionStore((state) => state.session);
+
+  if (!session) {
+    return <Redirect href="/auth" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

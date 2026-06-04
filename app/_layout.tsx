@@ -14,10 +14,13 @@ export default function RootLayout() {
   );
 }
 
+export const unstable_settings = {
+  initialRouteName: 'auth',
+};
+
 function RootNavigator() {
   const colors = useThemeColors();
   const isReady = useSessionStore((state) => state.isReady);
-  const session = useSessionStore((state) => state.session);
 
   if (!isSupabaseConfigured) {
     return (
@@ -39,18 +42,13 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {session ? (
-        <>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="post/create" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="post/[id]" />
-          <Stack.Screen name="admin/questions" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="admin/reports" options={{ presentation: 'modal' }} />
-        </>
-      ) : (
-        <Stack.Screen name="auth" />
-      )}
+    <Stack initialRouteName="auth" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="auth" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="post/create" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="post/[id]" />
+      <Stack.Screen name="admin/questions" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="admin/reports" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

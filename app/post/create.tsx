@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/src/components/Screen';
 import { Body, Heading } from '@/src/components/Typography';
@@ -26,13 +26,19 @@ export default function CreatePostScreen() {
   const isWide = width >= 860;
   const previewWidth = Math.min(isWide ? 390 : width - 40, 430);
   const canPost = Boolean(caption.trim() && image && question.data && !loading);
-  const disabledReason = !question.data
-    ? 'Today question is missing. Run supabase/schema.sql or create a question as admin.'
-    : !image
-      ? 'Choose a photo or capture one with the camera.'
-      : !caption.trim()
-        ? 'Write one sentence before posting.'
-        : '';
+  const disabledReason = question.isError
+    ? 'Could not load today question. Run supabase/schema.sql in Supabase SQL Editor.'
+    : !question.data
+      ? 'Today question is missing. Run supabase/schema.sql or create a question as admin.'
+      : !image
+        ? 'Choose a photo or capture one with the camera.'
+        : !caption.trim()
+          ? 'Write one sentence before posting.'
+          : '';
+
+  if (!session) {
+    return <Redirect href="/auth" />;
+  }
 
   const chooseLibrary = async () => {
     setMessage('');
@@ -149,6 +155,11 @@ export default function CreatePostScreen() {
           <Pressable onPress={() => router.back()} style={[styles.secondary, { borderColor: colors.border }]}>
             <Body>Cancel</Body>
           </Pressable>
+          {question.isError ? (
+            <Body style={[styles.message, { color: colors.accent }]}>
+              {question.error instanceof Error ? question.error.message : 'Today question could not be loaded.'}
+            </Body>
+          ) : null}
           {message ? <Body style={[styles.message, { color: colors.accent }]}>{message}</Body> : null}
         </View>
       </ScrollView>

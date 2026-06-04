@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/src/components/Screen';
 import { Body, Heading } from '@/src/components/Typography';
 import { forgotPassword, signInWithApple, signInWithEmail, signInWithGoogle, signUpWithEmail } from '@/src/features/auth/useAuth';
+import { supabase } from '@/src/lib/supabase';
+import { useSessionStore } from '@/src/store/sessionStore';
 import { useThemeColors } from '@/src/theme/useThemeColors';
 
 export default function AuthScreen() {
   const colors = useThemeColors();
   const { width } = useWindowDimensions();
+  const queryClient = useQueryClient();
+  const session = useSessionStore((state) => state.session);
+  const clearSession = useSessionStore((state) => state.clearSession);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,9 +28,28 @@ export default function AuthScreen() {
     try {
       const response = mode === 'signin' ? await signInWithEmail(email.trim(), password) : await signUpWithEmail(email.trim(), password);
       if (response.error) throw response.error;
-      if (mode === 'signup') setMessage('Check your email, then sign in.');
+      if (mode === 'signin' || response.data.session) {
+        router.replace('/(tabs)');
+      } else {
+        setMessage('Check your email, then sign in.');
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+      queryClient.clear();
+      clearSession();
+      setMessage('Logged out. Sign in again to continue.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not log out.');
     } finally {
       setLoading(false);
     }
@@ -70,6 +96,23 @@ export default function AuthScreen() {
           </View>
 
           <View style={[styles.authPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {session ? (
+              <View style={[styles.sessionPanel, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                <Body style={[styles.sessionLabel, { color: colors.muted }]}>Signed in as</Body>
+                <Body numberOfLines={1} style={styles.sessionEmail}>
+                  {session.user.email ?? 'current user'}
+                </Body>
+                <View style={styles.sessionActions}>
+                  <Pressable onPress={() => router.replace('/(tabs)')} style={[styles.sessionButton, { backgroundColor: colors.accent }]}>
+                    <Body style={styles.sessionButtonText}>Continue</Body>
+                  </Pressable>
+                  <Pressable disabled={loading} onPress={logout} style={[styles.sessionButton, { borderColor: colors.border, borderWidth: 1 }]}>
+                    <Body style={{ fontWeight: '900' }}>Logout</Body>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+
             <View style={[styles.segment, { borderColor: colors.border }]}>
               <Pressable onPress={() => setMode('signin')} style={[styles.segmentItem, { backgroundColor: mode === 'signin' ? colors.accent : 'transparent' }]}>
                 <Body style={{ color: mode === 'signin' ? '#fff' : colors.text, fontWeight: '900' }}>Login</Body>
@@ -143,6 +186,12 @@ const styles = StyleSheet.create({
   title: { maxWidth: 420 },
   copy: { maxWidth: 360, lineHeight: 23 },
   authPanel: { width: '100%', maxWidth: 420, alignSelf: 'center', borderWidth: 1, borderRadius: 8, padding: 16, gap: 16 },
+  sessionPanel: { borderWidth: 1, borderRadius: 8, padding: 12, gap: 10 },
+  sessionLabel: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
+  sessionEmail: { fontWeight: '900' },
+  sessionActions: { flexDirection: 'row', gap: 10 },
+  sessionButton: { flex: 1, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  sessionButtonText: { color: '#fff', fontWeight: '900' },
   segment: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, padding: 3 },
   segmentItem: { flex: 1, alignItems: 'center', borderRadius: 6, paddingVertical: 11 },
   form: { gap: 10 },
