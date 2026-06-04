@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/src/components/Screen';
 import { Body, Heading } from '@/src/components/Typography';
-import { forgotPassword, signInWithApple, signInWithEmail, signInWithGoogle, signUpWithEmail } from '@/src/features/auth/useAuth';
+import { forgotPassword, formatAuthError, signInWithApple, signInWithEmail, signInWithGoogle, signUpWithEmail } from '@/src/features/auth/useAuth';
 import { supabase } from '@/src/lib/supabase';
 import { useSessionStore } from '@/src/store/sessionStore';
 import { useThemeColors } from '@/src/theme/useThemeColors';
@@ -23,18 +23,28 @@ export default function AuthScreen() {
   const isWide = width >= 860;
 
   const submit = async () => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setMessage('Enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setMessage('Password must be at least 6 characters.');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
     try {
-      const response = mode === 'signin' ? await signInWithEmail(email.trim(), password) : await signUpWithEmail(email.trim(), password);
+      const response = mode === 'signin' ? await signInWithEmail(cleanEmail, password) : await signUpWithEmail(cleanEmail, password);
       if (response.error) throw response.error;
       if (mode === 'signin' || response.data.session) {
         router.replace('/(tabs)');
       } else {
-        setMessage('Check your email, then sign in.');
+        setMessage('Account created. Check your email confirmation link, then log in.');
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Authentication failed.');
+      setMessage(formatAuthError(error));
     } finally {
       setLoading(false);
     }
@@ -49,7 +59,7 @@ export default function AuthScreen() {
       clearSession();
       setMessage('Logged out. Sign in again to continue.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not log out.');
+      setMessage(formatAuthError(error, 'Could not log out.'));
     } finally {
       setLoading(false);
     }
@@ -67,7 +77,7 @@ export default function AuthScreen() {
       if (error) throw error;
       setMessage('Password reset email sent.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not send reset email.');
+      setMessage(formatAuthError(error, 'Could not send reset email.'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +89,7 @@ export default function AuthScreen() {
     try {
       await (provider === 'google' ? signInWithGoogle() : signInWithApple());
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Social sign-in failed. Check Supabase provider settings and redirect URLs.');
+      setMessage(formatAuthError(error, 'Social sign-in failed. Check Supabase provider settings and redirect URLs.'));
     } finally {
       setLoading(false);
     }
